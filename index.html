@@ -1,0 +1,237 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#102c27">
+<title>STOCK360 | Inventario</title>
+<style>
+:root{--bg:#f3f6f5;--dark:#102c27;--green:#168568;--white:#fff;--muted:#718078;--line:#e5ebe8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:Arial,sans-serif;color:#20312c}
+header{background:var(--dark);color:white;padding:22px 18px}
+.brand{font-size:25px;font-weight:800;letter-spacing:1px}
+.brand span{color:#48d5a8}
+header p{margin:6px 0 0;color:#b8cec5;font-size:13px}
+main{max-width:950px;margin:auto;padding:17px}
+h2{font-size:19px;margin:22px 0 12px}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.stat,.panel{background:white;border-radius:13px;padding:15px;border:1px solid var(--line)}
+.stat small{color:var(--muted)}
+.stat strong{display:block;font-size:25px;margin-top:8px;color:var(--dark)}
+nav{display:flex;gap:8px;overflow:auto;padding:12px 0}
+nav button{white-space:nowrap;border:0;background:white;padding:11px 15px;border-radius:9px;color:#40534b}
+nav button.active{background:var(--green);color:white}
+button{cursor:pointer}
+.panel{margin-bottom:14px}
+label{display:block;font-size:13px;font-weight:bold;margin:12px 0 5px}
+input,select{width:100%;padding:12px;border:1px solid #d6e0db;border-radius:8px;font-size:15px;background:white}
+.primary{background:var(--green);color:white;border:0;padding:12px 16px;border-radius:8px;font-weight:bold;margin-top:14px;width:100%}
+.secondary{background:#edf4f1;color:#17634f;border:0;padding:9px 12px;border-radius:8px}
+.danger{background:#fff0ed;color:#b43e2c;border:0;padding:8px;border-radius:7px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.product{padding:13px 0;border-bottom:1px solid var(--line)}
+.product:last-child{border:0}
+.product strong{display:block}
+.meta{color:var(--muted);font-size:12px;margin-top:5px}
+.stock{font-weight:bold;color:var(--green)}
+.low{color:#c46b18}
+.actions{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap}
+.hidden{display:none}
+.movement{padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
+footer{text-align:center;color:var(--muted);font-size:11px;padding:25px}
+.empty{color:var(--muted);text-align:center;padding:25px 5px}
+@media(min-width:650px){.stats{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<header>
+ <div class="brand">STOCK<span>360</span></div>
+ <p>Control inteligente de inventario</p>
+</header>
+<main>
+ <div class="stats">
+  <div class="stat"><small>Productos</small><strong id="total">0</strong></div>
+  <div class="stat"><small>Unidades en stock</small><strong id="units">0</strong></div>
+  <div class="stat"><small>Stock bajo</small><strong id="low">0</strong></div>
+  <div class="stat"><small>Movimientos</small><strong id="moves">0</strong></div>
+ </div>
+
+ <nav>
+  <button class="active" data-tab="inventory">Inventario</button>
+  <button data-tab="add">Nuevo producto</button>
+  <button data-tab="movement">Entradas / salidas</button>
+  <button data-tab="history">Historial</button>
+ </nav>
+
+ <section id="inventory">
+  <h2>Inventario general</h2>
+  <div class="panel">
+   <input id="search" placeholder="Buscar por nombre, SKU o código...">
+   <div id="products"></div>
+  </div>
+ </section>
+
+ <section id="add" class="hidden">
+  <h2>Registrar producto</h2>
+  <div class="panel">
+   <form id="productForm">
+    <label>Nombre del producto *</label>
+    <input id="name" required placeholder="Ej. Filtro de aceite">
+    <div class="row">
+     <div><label>SKU / Código *</label><input id="sku" required placeholder="REP-001"></div>
+     <div><label>Categoría</label><input id="category" placeholder="Repuestos"></div>
+    </div>
+    <div class="row">
+     <div><label>Precio de compra (Gs.)</label><input id="cost" type="number" min="0" value="0"></div>
+     <div><label>Precio de venta (Gs.)</label><input id="price" type="number" min="0" value="0"></div>
+    </div>
+    <div class="row">
+     <div><label>Stock inicial</label><input id="quantity" type="number" min="0" value="0"></div>
+     <div><label>Stock mínimo</label><input id="minimum" type="number" min="0" value="5"></div>
+    </div>
+    <label>Ubicación en depósito</label>
+    <input id="location" placeholder="Ej. Estante A - Nivel 2">
+    <button class="primary" type="submit">Guardar producto</button>
+   </form>
+  </div>
+ </section>
+
+ <section id="movement" class="hidden">
+  <h2>Registrar movimiento</h2>
+  <div class="panel">
+   <form id="movementForm">
+    <label>Producto</label>
+    <select id="movementProduct" required></select>
+    <label>Tipo de movimiento</label>
+    <select id="movementType">
+     <option value="entrada">Entrada de mercadería</option>
+     <option value="salida">Salida de mercadería</option>
+    </select>
+    <label>Cantidad</label>
+    <input id="movementQuantity" type="number" min="1" required>
+    <label>Observación</label>
+    <input id="note" placeholder="Compra, venta, ajuste...">
+    <button class="primary" type="submit">Confirmar movimiento</button>
+   </form>
+  </div>
+ </section>
+
+ <section id="history" class="hidden">
+  <h2>Historial de movimientos</h2>
+  <div class="panel" id="historyList"></div>
+ </section>
+</main>
+<footer>STOCK360 · Versión de prueba 0.1 · Datos guardados en este dispositivo</footer>
+
+<script>
+const KEY="stock360_products_v1";
+const MKEY="stock360_movements_v1";
+let products=JSON.parse(localStorage.getItem(KEY)||"[]");
+let movements=JSON.parse(localStorage.getItem(MKEY)||"[]");
+
+const $=id=>document.getElementById(id);
+const save=()=>{
+ localStorage.setItem(KEY,JSON.stringify(products));
+ localStorage.setItem(MKEY,JSON.stringify(movements));
+ render();
+};
+const safe=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money=n=>Number(n||0).toLocaleString("es-PY");
+
+function render(){
+ $("total").textContent=products.length;
+ $("units").textContent=products.reduce((a,p)=>a+Number(p.quantity),0);
+ $("low").textContent=products.filter(p=>Number(p.quantity)<=Number(p.minimum)).length;
+ $("moves").textContent=movements.length;
+
+ const q=$("search").value.toLowerCase();
+ const filtered=products.filter(p=>(p.name+" "+p.sku+" "+p.category).toLowerCase().includes(q));
+ $("products").innerHTML=filtered.length?filtered.map(p=>`
+ <div class="product">
+  <strong>${safe(p.name)}</strong>
+  <div class="meta">SKU: ${safe(p.sku)} · ${safe(p.category||"Sin categoría")}</div>
+  <div class="meta">Ubicación: ${safe(p.location||"No asignada")}</div>
+  <p>Stock: <span class="${Number(p.quantity)<=Number(p.minimum)?"low":"stock"}">${p.quantity} unidades</span></p>
+  <div class="meta">Compra: Gs. ${money(p.cost)} · Venta: Gs. ${money(p.price)}</div>
+  <div class="actions">
+   <button class="secondary" onclick="quickMove('${p.id}','entrada')">+ Entrada</button>
+   <button class="secondary" onclick="quickMove('${p.id}','salida')">− Salida</button>
+   <button class="danger" onclick="removeProduct('${p.id}')">Eliminar</button>
+  </div>
+ </div>`).join(""):'<div class="empty">Todavía no hay productos registrados.</div>';
+
+ $("movementProduct").innerHTML=products.length?products.map(p=>`<option value="${p.id}">${safe(p.name)} (${p.quantity} unidades)</option>`).join(""):'<option value="">Primero registrá un producto</option>';
+
+ $("historyList").innerHTML=movements.length?[...movements].reverse().map(m=>`
+ <div class="movement">
+ <strong>${safe(m.name)}</strong><br>
+ ${m.type==="entrada"?"🟢 Entrada":"🔴 Salida"}: ${m.quantity} unidades
+ <div class="meta">${safe(m.date)} · ${safe(m.note||"Sin observación")}</div>
+ </div>`).join(""):'<div class="empty">No hay movimientos todavía.</div>';
+}
+
+function tab(name){
+ document.querySelectorAll("main section").forEach(s=>s.classList.add("hidden"));
+ $(name).classList.remove("hidden");
+ document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===name));
+}
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>tab(b.dataset.tab)));
+
+$("productForm").addEventListener("submit",e=>{
+ e.preventDefault();
+ const sku=$("sku").value.trim();
+ if(products.some(p=>p.sku.toLowerCase()===sku.toLowerCase())){
+  alert("Ese código SKU ya existe.");return;
+ }
+ const p={
+  id:crypto.randomUUID(),name:$("name").value.trim(),sku,
+  category:$("category").value.trim(),cost:Number($("cost").value),
+  price:Number($("price").value),quantity:Number($("quantity").value),
+  minimum:Number($("minimum").value),location:$("location").value.trim()
+ };
+ products.push(p);
+ if(p.quantity>0) movements.push({name:p.name,type:"entrada",quantity:p.quantity,date:new Date().toLocaleString("es-PY"),note:"Stock inicial"});
+ save();e.target.reset();
+ $("cost").value=0;$("price").value=0;$("quantity").value=0;$("minimum").value=5;
+ tab("inventory");
+ alert("Producto registrado correctamente.");
+});
+
+$("movementForm").addEventListener("submit",e=>{
+ e.preventDefault();
+ const p=products.find(x=>x.id===$("movementProduct").value);
+ const qty=Number($("movementQuantity").value);
+ if(!p||qty<=0)return;
+ const type=$("movementType").value;
+ if(type==="salida"&&qty>p.quantity){alert("Stock insuficiente.");return;}
+ p.quantity+=type==="entrada"?qty:-qty;
+ movements.push({name:p.name,type,quantity:qty,date:new Date().toLocaleString("es-PY"),note:$("note").value});
+ save();$("movementQuantity").value="";$("note").value="";
+ alert("Movimiento registrado correctamente.");
+ tab("inventory");
+});
+
+function quickMove(id,type){
+ const p=products.find(x=>x.id===id);
+ const answer=prompt((type==="entrada"?"Cantidad que ingresa a ":"Cantidad que sale de ")+p.name+":");
+ if(answer===null)return;
+ const qty=Number(answer);
+ if(!Number.isInteger(qty)||qty<=0){alert("Ingresá una cantidad válida.");return;}
+ if(type==="salida"&&qty>p.quantity){alert("Stock insuficiente.");return;}
+ p.quantity+=type==="entrada"?qty:-qty;
+ movements.push({name:p.name,type,quantity:qty,date:new Date().toLocaleString("es-PY"),note:"Movimiento rápido"});
+ save();
+}
+function removeProduct(id){
+ const p=products.find(x=>x.id===id);
+ if(confirm("¿Eliminar "+p.name+"? Esta acción no se puede deshacer.")){
+  products=products.filter(x=>x.id!==id);save();
+ }
+}
+$("search").addEventListener("input",render);
+render();
+</script>
+</body>
+</html>
